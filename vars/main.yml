@@ -1,0 +1,8 @@
+do_token: "dop_v1_2af6367664cc32427507b65a4e752e159e9178fc949fe87b5e9c75661b7c743e"
+region: nyc1
+size: s-2vcpu-4gb
+image: ubuntu-22-04-x64
+master_count: 1
+worker_count: 2
+ssh_pub_key_path: ~/.ssh/id_rsa.pub
+

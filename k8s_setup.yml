@@ -1,0 +1,76 @@
+- name: Provision Kubernetes Nodes
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Upload SSH key to DigitalOcean
+      community.digitalocean.digital_ocean_sshkey:
+        oauth_token: "{{ do_token }}"
+        state: present
+        name: "k8s-ssh-key"
+        ssh_pub_key: "{{ lookup('file', ssh_pub_key_path) }}"
+      register: ssh_key_response
+
+    - name: Set the SSH fingerprint
+      set_fact:
+        ssh_fingerprint: "{{ ssh_key_response.data.ssh_key.fingerprint }}"
+
+    - name: Create master nodes
+      community.digitalocean.digital_ocean_droplet:
+        oauth_token: "{{ do_token }}"
+        state: present
+        region: "{{ region }}"
+        size: "{{ size }}"
+        image: "{{ image }}"
+        name: "k8s-master-{{ item }}"
+        ssh_keys:
+          - "{{ ssh_fingerprint }}"
+      with_sequence: start=1 end="{{ master_count }}"
+      register: master_droplets
+
+    - name: Create worker nodes
+      community.digitalocean.digital_ocean_droplet:
+        oauth_token: "{{ do_token }}"
+        state: present
+        region: "{{ region }}"
+        size: "{{ size }}"
+        image: "{{ image }}"
+        name: "k8s-worker-{{ item }}"
+        ssh_keys:
+          - "{{ ssh_fingerprint }}"
+      with_sequence: start=1 end="{{ worker_count }}"
+      register: worker_droplets
+
+    - name: Combine all nodes for configuration
+      set_fact:
+        all_nodes: "{{ master_droplets.results + worker_droplets.results }}"
+
+    - name: Add master nodes to inventory
+      add_host:
+        name: "{{ item.data.droplet.networks.v4[0].ip_address }}"
+        groups: master
+      loop: "{{ master_droplets.results }}"
+
+    - name: Add worker nodes to inventory
+      add_host:
+        name: "{{ item.data.droplet.networks.v4[0].ip_address }}"
+        groups: worker
+      loop: "{{ worker_droplets.results }}"
+
+    - name: Add all nodes to inventory
+      add_host:
+        name: "{{ item.data.droplet.networks.v4[0].ip_address }}"
+        groups: all
+      loop: "{{ all_nodes }}"
+
+- name: Configure Kubernetes Nodes
+  hosts: all
+  gather_facts: yes
+  vars:
+    ansible_ssh_common_args: "-o ConnectTimeout=5 -o ConnectionAttempts=5"
+  roles:
+    - configure_nodes
+
+
