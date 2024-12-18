@@ -1,0 +1,5 @@
+- name: Generate dynamic inventory
+  template:
+    src: dynamic_inventory.yml.j2
+    dest: inventory/dynamic_inventory.yml
+

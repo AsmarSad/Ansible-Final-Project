@@ -1,0 +1,7 @@
+all:
+  hosts: {{ all_ips | to_json }}
+master:
+  hosts: {{ master_ips | to_json }}
+worker:
+  hosts: {{ worker_ips | to_json }}
+

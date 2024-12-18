@@ -1,4 +1,3 @@
----
 - name: Ensure Kubernetes apt keyring directory exists
   ansible.builtin.file:
     path: /etc/apt/keyrings
@@ -21,13 +20,17 @@
     update_cache: yes
 
 - name: Install required packages for Kubernetes
-  ansible.builtin.apt:
+  apt:
     name:
-      - kubelet
-      - kubeadm
-      - kubectl
+      - kubelet=1.28.15-1.1
+      - kubeadm=1.28.15-1.1
+      - kubectl=1.28.15-1.1
     state: present
     update_cache: yes
+  register: install_result
+  retries: 5
+  delay: 30
+  until: install_result is succeeded
 
 - name: Ensure services are enabled and running
   ansible.builtin.systemd:

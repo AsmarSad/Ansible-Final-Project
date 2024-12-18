@@ -1,0 +1,7 @@
+region: nyc1
+size: s-4vcpu-8gb
+image: ubuntu-22-04-x64
+master_count: 3
+worker_count: 5
+ssh_pub_key_path: ~/.ssh/id_rsa.pub
+
